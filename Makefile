@@ -17,6 +17,14 @@ test:
 lint:
 	go list ./... | grep -v /vendor/ | xargs -L1 golint -set_exit_status
 
+regenerate: clean-example
+	cd example ; ./generate.sh
+
+clean-example:
+	rm example/main
+	rm -rf example/dart_client/config/model ; rm -rf example/dart_client/config/service
+
+
 run: install
 	mkdir -p example/dart_client && \
 	protoc --proto_path=${GOPATH}/src:. --twirp_out=. --go_out=. --twirp_dart_out=package_name=haberdasher:./example/dart_client ./example/service.proto

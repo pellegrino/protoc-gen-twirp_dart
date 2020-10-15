@@ -45,7 +45,7 @@ class Hat {
       json['color'] as String,
       json['name'] as String,
       DateTime.tryParse(json['created_on']),
-      new Color.fromJson(json),
+      new Color.fromJson(json['rgbColor']),
       json['availableSizes'] != null
           ? (json['availableSizes'] as List)
               .map((d) => new Size.fromJson(d))
