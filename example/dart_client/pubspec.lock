@@ -22,8 +22,15 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.14.11"
-  http:
+  fixnum:
     dependency: transitive
+    description:
+      name: fixnum
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.10.11"
+  http:
+    dependency: "direct main"
     description:
       name: http
       url: "https://pub.dartlang.org"
@@ -50,8 +57,15 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.6.2"
+  protobuf:
+    dependency: "direct main"
+    description:
+      name: protobuf
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.0.1"
   requester:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: requester
       url: "https://pub.dartlang.org"
@@ -86,4 +100,4 @@ packages:
     source: hosted
     version: "1.1.6"
 sdks:
-  dart: ">=2.0.0 <3.0.0"
+  dart: ">=2.1.1 <3.0.0"

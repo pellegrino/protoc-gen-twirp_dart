@@ -21,7 +21,7 @@ const apiTemplate = `
 // DO NOT EDIT
 ///// 
 {{- range .Imports}}
-import '{{.Path}}';
+{{if .Alias}}import '{{.Path}}' as {{.Alias}};{{else}}import '{{.Path}}';{{end}}
 {{- end}}
 
 {{- range .Models}}
@@ -36,8 +36,17 @@ class {{.Name}} {
     {{range .Fields -}}
     {{.Type}} {{.Name}};
 		{{end}}
+
+ pb.{{.Name}} toProto() {
+		var pb{{.Name}} = pb.{{.Name}}();
+			{{- range .Fields -}}
+			pb{{.ModelName}}.{{.Name}} = this.{{.Name}};
+			{{end}}
+
+    return pb{{.Name}};
+  }
 	
-	factory {{.Name}}._fromProtobufBytes(List<int> byteValues) {
+	factory {{.Name}}.fromProtobufBytes(List<int> byteValues) {
 		var pb{{.Name}} = pb.{{.Name}}.fromBuffer(byteValues);
 		
 		return new {{.Name}}(
@@ -152,13 +161,12 @@ class Protobuf{{.Name}} implements {{.Name}} {
 		var uri = Uri.parse(url);
     	var request = new Request('POST', uri);
 		request.headers['Content-Type'] = 'application/protobuf';
-    	request.body = json.encode({{.InputArg}}.toJson());
+			request.bodyBytes = {{.InputArg}}.toProto().writeToBuffer();
     	var response = await _requester.send(request);
 		if (response.statusCode != 200) {
      		throw twirpException(response);
-    	}
-    	var value = json.decode(response.body);
-    	return {{.OutputType}}.fromJson(value);
+			}
+			return {{.OutputType}}.fromProtobufBytes(response.bodyBytes);
 	}
     {{end}}
 
@@ -266,7 +274,8 @@ type APIContext struct {
 }
 
 type Import struct {
-	Path string
+	Path  string
+	Alias string
 }
 
 func (ctx *APIContext) AddModel(m *Model) {
@@ -278,13 +287,12 @@ func (ctx *APIContext) ApplyImports(d *descriptor.FileDescriptorProto) {
 	var deps []Import
 
 	if len(ctx.Services) > 0 {
-		deps = append(deps, Import{"dart:async"})
-		deps = append(deps, Import{"package:http/http.dart"})
-		deps = append(deps, Import{"package:requester/requester.dart"})
-		deps = append(deps, Import{"package:twirp_dart_core/twirp_dart_core.dart"})
-		deps = append(deps, Import{"package:foobar/twirp_dart_core.dart"})
+		deps = append(deps, Import{"dart:async", ""})
+		deps = append(deps, Import{"package:http/http.dart", ""})
+		deps = append(deps, Import{"package:requester/requester.dart", ""})
+		deps = append(deps, Import{"package:twirp_dart_core/twirp_dart_core.dart", ""})
 	}
-	deps = append(deps, Import{"dart:convert"})
+	deps = append(deps, Import{"dart:convert", ""})
 
 	for _, dep := range d.Dependency {
 		if dep == "google/protobuf/timestamp.proto" {
@@ -308,8 +316,9 @@ func (ctx *APIContext) ApplyImports(d *descriptor.FileDescriptorProto) {
 				fullPath = path.Join("..", fullPath)
 			}
 		}
-		deps = append(deps, Import{fullPath})
+		deps = append(deps, Import{fullPath, ""})
 	}
+	deps = append(deps, Import{"./" + protoFilename(d.GetName()), "pb"})
 	ctx.Imports = deps
 }
 
@@ -439,7 +448,7 @@ func CreateClientAPI(d *descriptor.FileDescriptorProto, generator *generator.Gen
 	})
 
 	ctx.ApplyImports(d)
-	//ctx.ApplyMarshalFlags()
+	ctx.ApplyMarshalFlags()
 
 	funcMap := template.FuncMap{
 		"stringify": stringify,
