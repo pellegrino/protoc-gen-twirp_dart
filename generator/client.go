@@ -37,14 +37,14 @@ class {{.Name}} {
     {{.Type}} {{.Name}};
 		{{end}}
 	
-	factory _{{.Name}}.fromProtobufBytes(List<int> byteValues) {
+	factory {{.Name}}._fromProtobufBytes(List<int> byteValues) {
 		var pb{{.Name}} = pb.{{.Name}}.fromBuffer(byteValues);
 		
 		return new {{.Name}}(
 			{{- range .Fields -}}
-				pb{{.Name}}.{{.Name}},
+				pb{{.ModelName}}.{{.Name}},
 			{{end}}
-		)
+		);
 	}
 	
 	factory {{.Name}}.fromJson(Map<String,dynamic> json) {
@@ -170,7 +170,6 @@ class Protobuf{{.Name}} implements {{.Name}} {
       		return new TwirpException(response.body);
     	}
   	}
-
 }
 
 class Default{{.Name}} implements {{.Name}} {
@@ -225,6 +224,7 @@ type Model struct {
 }
 
 type ModelField struct {
+	ModelName     string
 	Name          string
 	Type          string
 	InternalType  string
@@ -386,7 +386,7 @@ func CreateClientAPI(d *descriptor.FileDescriptorProto, generator *generator.Gen
 			Name: m.GetName(),
 		}
 		for _, f := range m.GetField() {
-			model.Fields = append(model.Fields, newField(f, m, d, generator))
+			model.Fields = append(model.Fields, newField(m.GetName(), f, m, d, generator))
 		}
 		ctx.AddModel(model)
 
@@ -464,7 +464,7 @@ func CreateClientAPI(d *descriptor.FileDescriptorProto, generator *generator.Gen
 	return cf, nil
 }
 
-func newField(f *descriptor.FieldDescriptorProto,
+func newField(modelName string, f *descriptor.FieldDescriptorProto,
 	m *descriptor.DescriptorProto,
 	d *descriptor.FileDescriptorProto,
 	gen *generator.Generator) ModelField {
@@ -473,6 +473,7 @@ func newField(f *descriptor.FieldDescriptorProto,
 	name := camelCase(jsonName)
 
 	field := ModelField{
+		ModelName:    modelName,
 		Name:         name,
 		Type:         dartType,
 		InternalType: internalType,
@@ -487,9 +488,9 @@ func newField(f *descriptor.FieldDescriptorProto,
 		keyField, valueField := nested.GetMapFields()
 		if keyField != nil && valueField != nil {
 			field.IsMap = true
-			mapKeyField := newField(keyField, nested, d, gen)
+			mapKeyField := newField(modelName, keyField, nested, d, gen)
 			field.MapKeyField = &mapKeyField
-			mapValueField := newField(valueField, nested, d, gen)
+			mapValueField := newField(modelName, valueField, nested, d, gen)
 			field.MapValueField = &mapValueField
 			field.Type = fmt.Sprintf("Map<%s,%s>", mapKeyField.Type, mapValueField.Type)
 		}

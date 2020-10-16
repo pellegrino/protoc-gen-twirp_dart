@@ -23,7 +23,7 @@ import proto "github.com/golang/protobuf/proto"
 import twirp "github.com/twitchtv/twirp"
 import ctxsetters "github.com/twitchtv/twirp/ctxsetters"
 
-import config_model "github.com/apptreesoftware/protoc-gen-twirp_dart/example/go/config/model"
+import config_model "github.com/pellegrino/protoc-gen-twirp_dart/example/go/config/model"
 
 // Imports only used by utility functions:
 import io "io"

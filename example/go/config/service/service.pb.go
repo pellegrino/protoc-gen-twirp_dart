@@ -7,7 +7,7 @@
 package config_service
 
 import (
-	model "github.com/apptreesoftware/protoc-gen-twirp_dart/example/go/config/model"
+	model "github.com/pellegrino/protoc-gen-twirp_dart/example/go/config/model"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"

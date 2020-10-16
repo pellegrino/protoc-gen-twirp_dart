@@ -24,7 +24,7 @@ protobuf: ^1.0.1
 
 ## Usage
 
-    go get -u github.com/apptreesoftware/protoc-gen-twirp_dart
+    go get -u github.com/pellegrino/protoc-gen-twirp_dart
     pub global activate protoc_plugin
     protoc --dart_out=./example/dart_client --twirp_dart_out=./example/dart_client ./example/go/rpc/example/service.proto
 

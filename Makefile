@@ -9,7 +9,7 @@ LDFLAGS := -ldflags "-X main.Timestamp=${TIMESTAMP} -X main.Commit=${COMMIT} -X 
 all: clean test install
 
 install:
-	go install ${LDFLAGS} github.com/apptreesoftware/protoc-gen-twirp_dart
+	go install ${LDFLAGS} github.com/pellegrino/protoc-gen-twirp_dart
 
 test:
 	go test -v ./...
@@ -21,7 +21,7 @@ regenerate: clean-example
 	cd example ; ./generate.sh
 
 clean-example:
-	rm example/main
+	rm -f example/main
 	rm -rf example/dart_client/config/model ; rm -rf example/dart_client/config/service
 
 
