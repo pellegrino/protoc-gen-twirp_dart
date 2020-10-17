@@ -28,9 +28,30 @@ class Hat {
   Map<String, int> dictionary;
   Map<String, Size> dictionaryWithMessage;
 
-  factory Hat._fromProtobufBytes(List<int> byteValues) {
-    var pbHat = pb.Hat.fromBuffer(byteValues);
+  pb.Hat toProto() {
+    var pbHat = pb.Hat();
+    pbHat.size = size;
+    pbHat.color = color;
+    pbHat.name = name;
+    pbHat.createdOn = createdOn;
+    pbHat.rgbColor = rgbColor.toProto();
+    availableSizes?.forEach((l) => pbHat.availableSizes.add(l.toProto()));
+    roles?.forEach((l) => pbHat.roles.add(l));
 
+    pbHat.dictionary.addAll(dictionary as Map<String, Int64>);
+    if (val is String) {
+      dictionaryMap[key] = int.parse(val);
+    } else if (val is num) {
+      dictionaryMap[key] = val.toInt();
+    }
+
+    dictionaryWithMessageMap[key] =
+        new Size.fromJson(val as Map<String, dynamic>);
+
+    return pbHat;
+  }
+
+  factory Hat.fromProto(pb.Hat pbHat) {
     return new Hat(
       pbHat.size,
       pbHat.color,
@@ -42,6 +63,11 @@ class Hat {
       pbHat.dictionary,
       pbHat.dictionaryWithMessage,
     );
+  }
+
+  factory Hat.fromProtobufBytes(List<int> byteValues) {
+    var pbHat = pb.Hat.fromBuffer(byteValues);
+    return Hat.fromProto(pbHat);
   }
 
   factory Hat.fromJson(Map<String, dynamic> json) {
@@ -110,14 +136,25 @@ class Color {
   int green;
   int blue;
 
-  factory Color._fromProtobufBytes(List<int> byteValues) {
-    var pbColor = pb.Color.fromBuffer(byteValues);
+  pb.Color toProto() {
+    var pbColor = pb.Color();
+    pbColor.red = red;
+    pbColor.green = green;
+    pbColor.blue = blue;
+    return pbColor;
+  }
 
+  factory Color.fromProto(pb.Color pbColor) {
     return new Color(
       pbColor.red,
       pbColor.green,
       pbColor.blue,
     );
+  }
+
+  factory Color.fromProtobufBytes(List<int> byteValues) {
+    var pbColor = pb.Color.fromBuffer(byteValues);
+    return Color.fromProto(pbColor);
   }
 
   factory Color.fromJson(Map<String, dynamic> json) {
@@ -149,12 +186,21 @@ class Receipt {
 
   double total;
 
-  factory Receipt._fromProtobufBytes(List<int> byteValues) {
-    var pbReceipt = pb.Receipt.fromBuffer(byteValues);
+  pb.Receipt toProto() {
+    var pbReceipt = pb.Receipt();
+    pbReceipt.total = total;
+    return pbReceipt;
+  }
 
+  factory Receipt.fromProto(pb.Receipt pbReceipt) {
     return new Receipt(
       pbReceipt.total,
     );
+  }
+
+  factory Receipt.fromProtobufBytes(List<int> byteValues) {
+    var pbReceipt = pb.Receipt.fromBuffer(byteValues);
+    return Receipt.fromProto(pbReceipt);
   }
 
   factory Receipt.fromJson(Map<String, dynamic> json) {
@@ -182,12 +228,21 @@ class Size {
 
   int inches;
 
-  factory Size._fromProtobufBytes(List<int> byteValues) {
-    var pbSize = pb.Size.fromBuffer(byteValues);
+  pb.Size toProto() {
+    var pbSize = pb.Size();
+    pbSize.inches = inches;
+    return pbSize;
+  }
 
+  factory Size.fromProto(pb.Size pbSize) {
     return new Size(
       pbSize.inches,
     );
+  }
+
+  factory Size.fromProtobufBytes(List<int> byteValues) {
+    var pbSize = pb.Size.fromBuffer(byteValues);
+    return Size.fromProto(pbSize);
   }
 
   factory Size.fromJson(Map<String, dynamic> json) {

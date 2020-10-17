@@ -6,9 +6,9 @@ import 'dart:async';
 import 'package:http/http.dart';
 import 'package:requester/requester.dart';
 import 'package:twirp_dart_core/twirp_dart_core.dart';
-import 'package:foobar/twirp_dart_core.dart';
 import 'dart:convert';
 import '../model/model.twirp.dart';
+import './service.pb.dart' as pb;
 
 abstract class Haberdasher {
   Future<Hat> makeHat(Size size);
@@ -33,13 +33,12 @@ class ProtobufHaberdasher implements Haberdasher {
     var uri = Uri.parse(url);
     var request = new Request('POST', uri);
     request.headers['Content-Type'] = 'application/protobuf';
-    request.body = json.encode(size.toJson());
+    request.bodyBytes = size.toProto().writeToBuffer();
     var response = await _requester.send(request);
     if (response.statusCode != 200) {
       throw twirpException(response);
     }
-    var value = json.decode(response.body);
-    return Hat.fromJson(value);
+    return Hat.fromProtobufBytes(response.bodyBytes);
   }
 
   Future<Hat> buyHat(Hat hat) async {
@@ -47,13 +46,12 @@ class ProtobufHaberdasher implements Haberdasher {
     var uri = Uri.parse(url);
     var request = new Request('POST', uri);
     request.headers['Content-Type'] = 'application/protobuf';
-    request.body = json.encode(hat.toJson());
+    request.bodyBytes = hat.toProto().writeToBuffer();
     var response = await _requester.send(request);
     if (response.statusCode != 200) {
       throw twirpException(response);
     }
-    var value = json.decode(response.body);
-    return Hat.fromJson(value);
+    return Hat.fromProtobufBytes(response.bodyBytes);
   }
 
   Exception twirpException(Response response) {

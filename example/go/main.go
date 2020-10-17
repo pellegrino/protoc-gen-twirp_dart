@@ -16,10 +16,12 @@ import (
 
 type randomHaberdasher struct{}
 
+// BuyHat buys a hat
 func (h *randomHaberdasher) BuyHat(ctx context.Context, hat *model.Hat) (*model.Hat, error) {
 	return hat, nil
 }
 
+// MakeHat makes a hat
 func (h *randomHaberdasher) MakeHat(ctx context.Context, size *model.Size) (*model.Hat, error) {
 	if int(size.Inches) <= 0 {
 		return nil, twirp.InvalidArgumentError("Inches", "must be a positive number greater than zero")

@@ -37,23 +37,56 @@ class {{.Name}} {
     {{.Type}} {{.Name}};
 		{{end}}
 
- pb.{{.Name}} toProto() {
+	pb.{{.Name}} toProto() {
 		var pb{{.Name}} = pb.{{.Name}}();
-			{{- range .Fields -}}
-			pb{{.ModelName}}.{{.Name}} = this.{{.Name}};
-			{{end}}
+    	{{- range .Fields -}}
+		{{- if .IsMap }}
+				{{if .MapValueField.IsMessage}}
+				pb{{.ModelName}}.{{.Name}} = 
+				{{.Name}}Map[key] = new {{.MapValueField.Type}}.fromJson(val as Map<String,dynamic>);
+				{{else}}
+				if (val is String) {
+					{{if eq .MapValueField.Type "double"}}
+						{{.Name}}Map[key] = double.parse(val);
+					{{end}}
+					{{if eq .MapValueField.Type "int"}}
+						{{.Name}}Map[key] = int.parse(val);
+					{{end}}
+				} else if (val is num) {
+					{{if eq .MapValueField.Type "double"}}
+						{{.Name}}Map[key] = val.toDouble();
+					{{end}}
+					{{if eq .MapValueField.Type "int"}}
+						{{.Name}}Map[key] = val.toInt();
+					{{end}}
+				}
+				{{end}}
+		{{- else if and .IsRepeated .IsMessage}}
+		{{.Name}}?.forEach((l) => pb{{.ModelName}}.{{.Name}}.add(l.toProto()));
+		{{- else if .IsRepeated }}
+		{{.Name}}?.forEach((l) => pb{{.ModelName}}.{{.Name}}.add(l));
+		{{- else if and (.IsMessage) (eq .Type "DateTime")}}
+		pb{{.ModelName}}.{{.Name}} = {{.Name}};
+		{{- else if .IsMessage}}
+		pb{{.ModelName}}.{{.Name}} = {{.Name}}.toProto();
+		{{- else}}
+    	pb{{.ModelName}}.{{.Name}} = {{.Name}};
+    	{{- end}}
+		{{- end}}
+		return pb{{.Name}};
+	}
 
-    return pb{{.Name}};
-  }
+	factory {{.Name}}.fromProto(pb.{{.Name}} pb{{.Name}}) {
+			return new {{.Name}}(
+				{{- range .Fields -}}
+					pb{{.ModelName}}.{{.Name}},
+				{{end}}
+			);
+	}
 	
 	factory {{.Name}}.fromProtobufBytes(List<int> byteValues) {
 		var pb{{.Name}} = pb.{{.Name}}.fromBuffer(byteValues);
-		
-		return new {{.Name}}(
-			{{- range .Fields -}}
-				pb{{.ModelName}}.{{.Name}},
-			{{end}}
-		);
+		return {{.Name}}.fromProto(pb{{.Name}});
 	}
 	
 	factory {{.Name}}.fromJson(Map<String,dynamic> json) {
@@ -293,6 +326,11 @@ func (ctx *APIContext) ApplyImports(d *descriptor.FileDescriptorProto) {
 		deps = append(deps, Import{"package:twirp_dart_core/twirp_dart_core.dart", ""})
 	}
 	deps = append(deps, Import{"dart:convert", ""})
+	if len(ctx.Models) > 0 {
+		deps = append(deps, Import{"dart:convert", ""})
+
+	}
+
 
 	for _, dep := range d.Dependency {
 		if dep == "google/protobuf/timestamp.proto" {
@@ -524,9 +562,11 @@ func protoToDartType(f *descriptor.FieldDescriptorProto) (string, string, string
 		break
 	case descriptor.FieldDescriptorProto_TYPE_FIXED32,
 		descriptor.FieldDescriptorProto_TYPE_FIXED64,
-		descriptor.FieldDescriptorProto_TYPE_INT32,
-		descriptor.FieldDescriptorProto_TYPE_INT64:
+		descriptor.FieldDescriptorProto_TYPE_INT32:
 		dartType = "int"
+		jsonType = "number"
+	case descriptor.FieldDescriptorProto_TYPE_INT64:
+		dartType = "Int64"
 		jsonType = "number"
 	case descriptor.FieldDescriptorProto_TYPE_STRING:
 		dartType = "String"

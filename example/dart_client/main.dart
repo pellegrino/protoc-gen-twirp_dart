@@ -4,7 +4,7 @@ import 'config/model/model.twirp.dart';
 import 'config/service/service.twirp.dart';
 
 Future main(List<String> args) async {
-  var service = new DefaultHaberdasher('http://apptree.ngrok.io');
+  var service = new DefaultHaberdasher('http://localhost:9000');
   try {
     var hat = await service.makeHat(new Size(10));
     print(hat);
