@@ -41,26 +41,11 @@ class {{.Name}} {
 		var pb{{.Name}} = pb.{{.Name}}();
     	{{- range .Fields -}}
 		{{- if .IsMap }}
-				{{if .MapValueField.IsMessage}}
-				pb{{.ModelName}}.{{.Name}} = 
-				{{.Name}}Map[key] = new {{.MapValueField.Type}}.fromJson(val as Map<String,dynamic>);
-				{{else}}
-				if (val is String) {
-					{{if eq .MapValueField.Type "double"}}
-						{{.Name}}Map[key] = double.parse(val);
-					{{end}}
-					{{if eq .MapValueField.Type "int"}}
-						{{.Name}}Map[key] = int.parse(val);
-					{{end}}
-				} else if (val is num) {
-					{{if eq .MapValueField.Type "double"}}
-						{{.Name}}Map[key] = val.toDouble();
-					{{end}}
-					{{if eq .MapValueField.Type "int"}}
-						{{.Name}}Map[key] = val.toInt();
-					{{end}}
-				}
-				{{end}}
+				{{if .MapValueField.IsMessage }}
+				pb{{.ModelName}}.{{.Name}}.addAll({{.Name}}.map((k, v) => MapEntry(k, v.toProto())));
+				{{- else }}
+				pb{{.ModelName}}.{{.Name}}.addAll({{.Name}});
+				{{- end}}
 		{{- else if and .IsRepeated .IsMessage}}
 		{{.Name}}?.forEach((l) => pb{{.ModelName}}.{{.Name}}.add(l.toProto()));
 		{{- else if .IsRepeated }}
@@ -73,13 +58,42 @@ class {{.Name}} {
     	pb{{.ModelName}}.{{.Name}} = {{.Name}};
     	{{- end}}
 		{{- end}}
+
 		return pb{{.Name}};
 	}
 
 	factory {{.Name}}.fromProto(pb.{{.Name}} pb{{.Name}}) {
+    	{{- range .Fields -}}
+		{{- if .IsMap }}
+				{{if .MapValueField.IsMessage }}
+				var {{.Name}} = pb{{.ModelName}}.{{.Name}}.map((k,v) => MapEntry(k, {{.MapValueField.Type}}.fromProto(v)));
+				{{- else }}
+				var {{.Name}} = pb{{.ModelName}}.{{.Name}}; 
+				{{- end}}
+		{{- else if and .IsRepeated .IsMessage}}
+		var {{.Name}} = new {{.Type}}();
+		pb{{.ModelName}}.{{.Name}}?.forEach((l) => {{.Name}}.add({{.InternalType}}.fromProto(l)));
+		{{- else if .IsRepeated }}
+		var {{.Name}} = new {{.Type}}();
+		pb{{.ModelName}}.{{.Name}}?.forEach((l) => {{.Name}}.add(l));
+		{{- else if and (.IsMessage) (eq .Type "DateTime")}}
+		var {{.Name}} = pb{{.ModelName}}.{{.Name}};
+		{{- else if .IsMessage}}
+		var {{.Name}} = {{.Type}}.fromProto(pb{{.ModelName}}.{{.Name}});
+		{{- end}}
+		{{- end}}
+
 			return new {{.Name}}(
 				{{- range .Fields -}}
+		{{- if .IsMap }}
+				{{.Name }},
+		{{- else if .IsMessage}}
+					{{.Name}},
+					{{- else if .IsRepeated }}
+					{{.Name}},
+					{{ else }}
 					pb{{.ModelName}}.{{.Name}},
+					{{- end }}
 				{{end}}
 			);
 	}
@@ -253,7 +267,6 @@ class Default{{.Name}} implements {{.Name}} {
 }
 
 {{end}}
-
 `
 
 type Model struct {
@@ -304,6 +317,7 @@ type APIContext struct {
 	Services    []*Service
 	Imports     []Import
 	modelLookup map[string]*Model
+	ExtraPkgs   []Import
 }
 
 type Import struct {
@@ -317,7 +331,7 @@ func (ctx *APIContext) AddModel(m *Model) {
 }
 
 func (ctx *APIContext) ApplyImports(d *descriptor.FileDescriptorProto) {
-	var deps []Import
+	var deps []Import = ctx.Imports
 
 	if len(ctx.Services) > 0 {
 		deps = append(deps, Import{"dart:async", ""})
@@ -325,12 +339,10 @@ func (ctx *APIContext) ApplyImports(d *descriptor.FileDescriptorProto) {
 		deps = append(deps, Import{"package:requester/requester.dart", ""})
 		deps = append(deps, Import{"package:twirp_dart_core/twirp_dart_core.dart", ""})
 	}
-	deps = append(deps, Import{"dart:convert", ""})
 	if len(ctx.Models) > 0 {
 		deps = append(deps, Import{"dart:convert", ""})
 
 	}
-
 
 	for _, dep := range d.Dependency {
 		if dep == "google/protobuf/timestamp.proto" {
@@ -433,7 +445,7 @@ func CreateClientAPI(d *descriptor.FileDescriptorProto, generator *generator.Gen
 			Name: m.GetName(),
 		}
 		for _, f := range m.GetField() {
-			model.Fields = append(model.Fields, newField(m.GetName(), f, m, d, generator))
+			model.Fields = append(model.Fields, newField(&ctx, m.GetName(), f, m, d, generator))
 		}
 		ctx.AddModel(model)
 
@@ -511,11 +523,11 @@ func CreateClientAPI(d *descriptor.FileDescriptorProto, generator *generator.Gen
 	return cf, nil
 }
 
-func newField(modelName string, f *descriptor.FieldDescriptorProto,
+func newField(ctx *APIContext, modelName string, f *descriptor.FieldDescriptorProto,
 	m *descriptor.DescriptorProto,
 	d *descriptor.FileDescriptorProto,
 	gen *generator.Generator) ModelField {
-	dartType, internalType, jsonType := protoToDartType(f)
+	dartType, internalType, jsonType := protoToDartType(ctx, f)
 	jsonName := f.GetName()
 	name := camelCase(jsonName)
 
@@ -535,9 +547,9 @@ func newField(modelName string, f *descriptor.FieldDescriptorProto,
 		keyField, valueField := nested.GetMapFields()
 		if keyField != nil && valueField != nil {
 			field.IsMap = true
-			mapKeyField := newField(modelName, keyField, nested, d, gen)
+			mapKeyField := newField(ctx, modelName, keyField, nested, d, gen)
 			field.MapKeyField = &mapKeyField
-			mapValueField := newField(modelName, valueField, nested, d, gen)
+			mapValueField := newField(ctx, modelName, valueField, nested, d, gen)
 			field.MapValueField = &mapValueField
 			field.Type = fmt.Sprintf("Map<%s,%s>", mapKeyField.Type, mapValueField.Type)
 		}
@@ -550,7 +562,7 @@ func newField(modelName string, f *descriptor.FieldDescriptorProto,
 
 // generates the (Type, JSONType) tuple for a ModelField so marshal/unmarshal functions
 // will work when converting between TS interfaces and protobuf JSON.
-func protoToDartType(f *descriptor.FieldDescriptorProto) (string, string, string) {
+func protoToDartType(ctx *APIContext, f *descriptor.FieldDescriptorProto) (string, string, string) {
 	dartType := "String"
 	jsonType := "string"
 	internalType := "String"
@@ -566,6 +578,7 @@ func protoToDartType(f *descriptor.FieldDescriptorProto) (string, string, string
 		dartType = "int"
 		jsonType = "number"
 	case descriptor.FieldDescriptorProto_TYPE_INT64:
+		ctx.Imports = append(ctx.Imports, Import{"package:fixnum/fixnum.dart", ""})
 		dartType = "Int64"
 		jsonType = "number"
 	case descriptor.FieldDescriptorProto_TYPE_STRING:

@@ -1,16 +1,18 @@
 import 'dart:async';
+import 'dart:ffi';
 
 import 'config/model/model.twirp.dart';
 import 'config/service/service.twirp.dart';
+import 'package:fixnum/fixnum.dart';
 
 Future main(List<String> args) async {
-  var service = new DefaultHaberdasher('http://localhost:9000');
+  var service = new ProtobufHaberdasher('http://localhost:9000');
   try {
     var hat = await service.makeHat(new Size(10));
     print(hat);
 
-    hat.dictionary["Test"] = 1;
-    hat.dictionary["Test2"] = 2;
+    hat.dictionary["Test"] = 1 as Int64;
+    hat.dictionary["Test2"] = 2 as Int64;
     hat.createdOn = new DateTime.now();
     hat.dictionaryWithMessage["BackupSize"] = new Size(20);
     var boughtHat = await service.buyHat(hat);
