@@ -34,6 +34,17 @@ This is different behavior than the twirp Go plugin, which places the files rela
 This decision is intentional, since only client code is generated, and the destination is likely somewhere different
 than the server code.
 
+In order to support google.protobuf.Timestamp fields, you need to generate the dart code separetely.
+
+See: [https://github.com/grpc/grpc-dart/issues/76#issuecomment-376875595]
+
+```
+# PROTO_DIR is the directory where the protobuf compiler has been installed
+
+protoc -I$PROTO_DIR --dart_out=example/dart_client $PROTO_DIR/google/protobuf/timestamp.proto
+
+```
+
 Using the Twirp hashberdasher proto:
 
 ```dart

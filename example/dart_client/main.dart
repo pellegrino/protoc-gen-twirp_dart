@@ -11,8 +11,8 @@ Future main(List<String> args) async {
     var hat = await service.makeHat(new Size(10));
     print(hat);
 
-    hat.dictionary["Test"] = 1 as Int64;
-    hat.dictionary["Test2"] = 2 as Int64;
+    hat.dictionary["Test"] = Int64(123121);
+    hat.dictionary["Test2"] = Int64(23);
     hat.createdOn = new DateTime.now();
     hat.dictionaryWithMessage["BackupSize"] = new Size(20);
     var boughtHat = await service.buyHat(hat);

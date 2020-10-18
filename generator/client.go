@@ -51,7 +51,7 @@ class {{.Name}} {
 		{{- else if .IsRepeated }}
 		{{.Name}}?.forEach((l) => pb{{.ModelName}}.{{.Name}}.add(l));
 		{{- else if and (.IsMessage) (eq .Type "DateTime")}}
-		pb{{.ModelName}}.{{.Name}} = {{.Name}};
+		pb{{.ModelName}}.{{.Name}} = pbTimestamp.Timestamp.fromDateTime({{.Name}});
 		{{- else if .IsMessage}}
 		pb{{.ModelName}}.{{.Name}} = {{.Name}}.toProto();
 		{{- else}}
@@ -77,7 +77,7 @@ class {{.Name}} {
 		var {{.Name}} = new {{.Type}}();
 		pb{{.ModelName}}.{{.Name}}?.forEach((l) => {{.Name}}.add(l));
 		{{- else if and (.IsMessage) (eq .Type "DateTime")}}
-		var {{.Name}} = pb{{.ModelName}}.{{.Name}};
+		var {{.Name}} = pb{{.ModelName}}.{{.Name}}.toDateTime();
 		{{- else if .IsMessage}}
 		var {{.Name}} = {{.Type}}.fromProto(pb{{.ModelName}}.{{.Name}});
 		{{- end}}
@@ -434,6 +434,7 @@ func (ctx *APIContext) enableUnmarshal(m *Model) {
 	}
 }
 
+// CreateClientAPI populates the context file
 func CreateClientAPI(d *descriptor.FileDescriptorProto, generator *generator.Generator) (*plugin_go.CodeGeneratorResponse_File, error) {
 	ctx := NewAPIContext()
 	pkg := d.GetPackage()
@@ -596,6 +597,7 @@ func protoToDartType(ctx *APIContext, f *descriptor.FieldDescriptorProto) (strin
 		// JSON.stringify already handles serializing Date to its RFC 3339 format.
 		//
 		if name == ".google.protobuf.Timestamp" {
+			ctx.Imports = append(ctx.Imports, Import{"../../google/protobuf/timestamp.pb.dart", "pbTimestamp"})
 			dartType = "DateTime"
 			jsonType = "string"
 		} else {

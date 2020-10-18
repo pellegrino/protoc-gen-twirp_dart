@@ -1,6 +1,7 @@
 .idea
 *.iml
 example/dart_client/.packages
+example/dart_client/google
 example/dart_client/.dart_tool
 example/main
 example/dart_client/config/*

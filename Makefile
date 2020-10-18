@@ -22,7 +22,7 @@ regenerate: clean-example
 
 clean-example:
 	rm -f example/main
-	rm -rf example/dart_client/config/model ; rm -rf example/dart_client/config/service
+	rm -rf example/dart_client/config/model ; rm -rf example/dart_client/config/service ; rm -rf example/dart_client/google
 
 
 run: install
